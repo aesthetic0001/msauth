@@ -106,5 +106,4 @@ app
 /accounts.json
 
 /.idea
-/dist/
 /pnpm-lock.yaml
