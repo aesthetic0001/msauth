@@ -19,7 +19,7 @@ export function setup(_config: Partial<MSConfigType>) {
     config = {...config,..._config};
 }
 
-async function createServer(serverConfig: ServerConfigType): Promise<ListeningHttpServer> {
+export async function createServer(serverConfig: ServerConfigType): Promise<ListeningHttpServer> {
     // @ts-ignore
     const server: ListeningHttpServer = http.createServer();
 
@@ -33,7 +33,7 @@ async function createServer(serverConfig: ServerConfigType): Promise<ListeningHt
     return server;
 }
 
-async function _listenForCode(server: ListeningHttpServer, serverConfig: ServerConfigType): Promise<string> {
+export async function _listenForCode(server: ListeningHttpServer, serverConfig: ServerConfigType): Promise<string> {
     return await new Promise<string>((r, j) => {
 
         let _timeout = setTimeout(async () => {
@@ -46,7 +46,7 @@ async function _listenForCode(server: ListeningHttpServer, serverConfig: ServerC
         };
 
         async function requestListener(req: IncomingMessage, res: ServerResponse) {
-            if(!req.url)return;
+            if (!req.url) return;
 
             switch (req.url.split('?')[0]) {
                 case '/token':
