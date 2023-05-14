@@ -1,0 +1,10 @@
+import { MCProfileResponse, NameChangeInfoResponse, ProfileResponseDecoded, UsernameToUUIDResponse } from "./MojangAPI.types";
+export declare function usernameToUUID(username: string): Promise<UsernameToUUIDResponse>;
+export declare function getProfileByUUID(uuid: string): Promise<ProfileResponseDecoded>;
+export declare function getBlockedServers(): Promise<string[]>;
+export declare function nameChangeInfo(token: string): Promise<NameChangeInfoResponse>;
+export declare function nameAvailability(name: string, token: string): Promise<boolean>;
+export declare function changeSkin(url: string, variant: "classic" | "slim", token: string): Promise<void>;
+export declare function resetSkin(uuid: string, token: string): Promise<void>;
+export declare function checkOwnership(token: string, profileResp?: MCProfileResponse): Promise<boolean>;
+export declare function getProfile(token: string): Promise<MCProfileResponse>;
