@@ -11,6 +11,11 @@ export type ServerConfigType = {
     timeout: number
 }
 
+export type Proxy = {
+    host: string,
+    port: number
+}
+
 export type TokenResponse = {
     token_type: string;
     expires_in: number;

@@ -1,8 +1,10 @@
 import http, {IncomingMessage, ServerResponse} from "http";
 import {HttpPost} from "http-client-methods";
+import fetch from 'node-fetch';
+import {HttpsProxyAgent} from "https-proxy-agent";
 import {
     MCTokenResponse,
-    MSConfigType,
+    MSConfigType, Proxy,
     ServerConfigType,
     TokenResponse,
     XBLResponse,
@@ -16,7 +18,7 @@ let config: MSConfigType = {
 }
 
 export function setup(_config: Partial<MSConfigType>) {
-    config = {...config,..._config};
+    config = {...config, ..._config};
 }
 
 export async function createServer(serverConfig: ServerConfigType): Promise<ListeningHttpServer> {
@@ -95,22 +97,22 @@ export async function _listenForCode(server: ListeningHttpServer, serverConfig: 
     });
 }
 
-export async function listenForCode(_serverConfig:Partial<ServerConfigType> = {}): Promise<string> {
-    const serverConfig:ServerConfigType = {port:8080, host:"localhost", timeout:30 * 1000,..._serverConfig}
+export async function listenForCode(_serverConfig: Partial<ServerConfigType> = {}): Promise<string> {
+    const serverConfig: ServerConfigType = {port: 8080, host: "localhost", timeout: 30 * 1000, ..._serverConfig}
 
     const server = await createServer(serverConfig);
     return _listenForCode(server, serverConfig);
 }
 
 export function createUrl() {
-    let encodedID = encodeURIComponent(config.appID??"");
+    let encodedID = encodeURIComponent(config.appID ?? "");
     let encodedUrl = encodeURIComponent(config.redirectURL);
     let encodedScope = encodeURIComponent(config.scope);
     return `https://login.live.com/oauth20_authorize.srf?client_id=${encodedID}&response_type=code&redirect_uri=${encodedUrl}&scope=${encodedScope}`;
 }
 
-export async function getToken(authCode:string) {
-    let encodedID = encodeURIComponent(config.appID??"");
+export async function getToken(authCode: string) {
+    let encodedID = encodeURIComponent(config.appID ?? "");
     let encodedUrl = encodeURIComponent(config.redirectURL);
 
     const url = 'https://login.live.com/oauth20_token.srf';
@@ -131,8 +133,8 @@ export async function getToken(authCode:string) {
     return jsonResponse;
 }
 
-export async function getTokenRefresh(refreshToken:string) {
-    let encodedID = encodeURIComponent(config.appID??"");
+export async function getTokenRefresh(refreshToken: string) {
+    let encodedID = encodeURIComponent(config.appID ?? "");
     let encodedUrl = encodeURIComponent(config.redirectURL);
 
     const url = 'https://login.live.com/oauth20_token.srf';
@@ -153,7 +155,7 @@ export async function getTokenRefresh(refreshToken:string) {
     return jsonResponse;
 }
 
-export async function authXBL(accessToken:string) {
+export async function authXBL(accessToken: string) {
     const body = {
         Properties: {
             AuthMethod: 'RPS',
@@ -177,7 +179,7 @@ export async function authXBL(accessToken:string) {
     return jsonResponse;
 }
 
-export async function authXSTS(xblToken:string) {
+export async function authXSTS(xblToken: string) {
     const body = {
         Properties: {
             SandboxId: 'RETAIL',
@@ -208,7 +210,7 @@ export async function authXSTS(xblToken:string) {
     return jsonResponse;
 }
 
-export async function getMinecraftToken(xstsToken:string, uhs:string) {
+export async function getMinecraftToken(xstsToken: string, uhs: string) {
     const body = {
         identityToken: `XBL3.0 x=${uhs};${xstsToken}`,
     };
@@ -225,17 +227,17 @@ export async function getMinecraftToken(xstsToken:string, uhs:string) {
     return jsonResponse;
 }
 
-export async function authFlow(authCode:string) {
+export async function authFlow(authCode: string) {
     const tokenRes = await getToken(authCode);
     return await authFlowXBL(tokenRes.access_token, tokenRes.refresh_token);
 }
 
-export async function authFlowRefresh(refresh_token:string) {
+export async function authFlowRefresh(refresh_token: string) {
     const tokenRes = await getTokenRefresh(refresh_token);
     return await authFlowXBL(tokenRes.access_token, tokenRes.refresh_token);
 }
 
-export async function authFlowXBL(token:string, refresh_token:string) {
+export async function authFlowXBL(token: string, refresh_token: string) {
     const xblRes = await authXBL(token);
     const xstsRes = await authXSTS(xblRes.Token);
     const mcToken = await getMinecraftToken(
@@ -245,3 +247,29 @@ export async function authFlowXBL(token:string, refresh_token:string) {
     return {access_token: mcToken.access_token, refresh_token};
 }
 
+export async function getMinecraftTokenWithProxy(xstsToken: string, uhs: string, proxy: Proxy) {
+    const response = await fetch("https://api.minecraftservices.com/authentication/login_with_xbox", {
+        agent: new HttpsProxyAgent(`https://${proxy.host}:${proxy.port}`),
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+        },
+        body: JSON.stringify({
+            identityToken: `XBL3.0 x=${uhs};${xstsToken}`,
+        })
+    });
+    const text = await response.text();
+    const jsonResponse: MCTokenResponse = JSON.parse(text);
+    return jsonResponse;
+}
+
+export async function authFlowXBLWithProxy(token: string, refresh_token: string, proxy: Proxy) {
+    const xblRes = await authXBL(token);
+    const xstsRes = await authXSTS(xblRes.Token);
+    const mcToken = await getMinecraftTokenWithProxy(
+        xstsRes.Token,
+        xblRes.DisplayClaims.xui[0].uhs,
+        proxy
+    );
+    return {access_token: mcToken.access_token, refresh_token};
+}
