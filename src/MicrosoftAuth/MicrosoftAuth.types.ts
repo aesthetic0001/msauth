@@ -13,7 +13,9 @@ export type ServerConfigType = {
 
 export type Proxy = {
     host: string,
-    port: number
+    port: number,
+    username?: string,
+    password?: string
 }
 
 export type TokenResponse = {

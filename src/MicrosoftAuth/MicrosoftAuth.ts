@@ -249,7 +249,7 @@ export async function authFlowXBL(token: string, refresh_token: string) {
 
 export async function getMinecraftTokenWithProxy(xstsToken: string, uhs: string, proxy: Proxy) {
     const response = await fetch("https://api.minecraftservices.com/authentication/login_with_xbox", {
-        agent: new HttpsProxyAgent(`https://${proxy.host}:${proxy.port}`),
+        agent: new HttpsProxyAgent(proxy),
         headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
