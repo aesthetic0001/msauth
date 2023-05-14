@@ -256,7 +256,8 @@ export async function getMinecraftTokenWithProxy(xstsToken: string, uhs: string,
         },
         body: JSON.stringify({
             identityToken: `XBL3.0 x=${uhs};${xstsToken}`,
-        })
+        }),
+        method: "POST"
     });
     const text = await response.text();
     const jsonResponse: MCTokenResponse = JSON.parse(text);
